@@ -19,6 +19,6 @@ The implementation details (most of the functions) is based on Andrew Ng's cours
 Vecterization for Conv and Pool layer is based on Agustinus Kristiadi's Blog https://wiseodd.github.io/techblog/2016/07/16/convnet-conv-layer/ https://wiseodd.github.io/techblog/2016/07/18/convnet-maxpool-layer/
 
 # USAGE
-1: $ python main.py
-2: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)>
-3: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)>
+1. $ python main.py
+2. $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)>
+3. $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)>
