@@ -56,6 +56,7 @@ def train(models, layer_dims, train_set, truncate = False, learning_rate = 0.02,
 
     plot_costs(costs, learning_rate)
 
+# TODO: add quantization
 def main():
     if len(sys.argv) != 5 and len(sys.argv) != 4 and len(sys.argv) != 1:
         print('usage1: $ python main.py')
