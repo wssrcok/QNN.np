@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from utils import load_dataset
 from model_seq import MNIST_model, MNIST_model_b
-from layers import educe_mean_softmax_cross_entropy_loss, \
+from layers import reduce_mean_softmax_cross_entropy_loss, \
                    initialize_weights_random_normal, update_weights
 
 def plot_costs(costs, learning_rate):
@@ -52,7 +52,7 @@ def train(models, layer_dims, train_set, truncate = False, learning_rate = 0.02,
             # print cost
             print ("\nCost after iteration %i, batch %i: %f \n" %(i, j, cost))
             costs.append(cost)
-        print('Epoch %i, Done!\n' %(i))
+        print('Epoch %i, Done!\n' %(i+1))
 
     plot_costs(costs, learning_rate)
 
@@ -84,7 +84,7 @@ def main():
         train(models, layer_dims, train_set,
             batch_size = int(sys.argv[1]),
             learning_rate = float(sys.argv[2]),
-            num_epochs = float(sys.argv[3]),
+            num_epochs = int(sys.argv[3]),
             truncate = int(sys.argv[4]))
 
 if __name__ == '__main__':

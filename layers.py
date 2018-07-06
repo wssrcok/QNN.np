@@ -1,6 +1,6 @@
 import numpy as np
-from im2col import *
 from quantize import truncate_features, truncate_weights
+from im2col import *
 
 def conv2d(weight_id = -1, hparameters = {'stride': 1, 'pad': 2}, truncate = 0):
     def layer(A_prev, parameters):
@@ -269,8 +269,7 @@ def reduce_mean_softmax_cross_entropy_loss(Y_hat, Y, truncate = False):
     """
     m = Y.shape[1]
     if truncate:
-        fc_out = np.where(fc_out == 0,1/256,fc_out) # TODO: clip value may need to be changed.
-        fc_out = np.where(fc_out == 1,255/256,fc_out) # TODO: clip value may need to be changed.
+        Y = np.clip(Y, 1/256, 255/256) # TODO: clip value may need to be changed.
     # Compute loss from aL and y.
     cost = (-1/m) * np.sum(Y*np.log(Y_hat))
     
