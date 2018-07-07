@@ -17,6 +17,13 @@ def load_dataset():
     eval_data = eval_data.reshape(10000,1,28,28)
     return train_data, train_labels, eval_data, eval_labels, classes
 
+def randomize_batch(train_data, train_labels, seed = 1):
+    np.random.seed(seed)
+    m = train_data.shape[0]
+    train_labels = train_labels.T # to make the shape (m, classes)
+    permutation = np.random.permutation(m)
+    return train_data[permutation], train_labels[permutation].T
+
 def one_hot_label(classes, label):
     """
     reshape label to Sam prefered shape for mnist
@@ -25,7 +32,7 @@ def one_hot_label(classes, label):
     label -- input label with shape (m,)
 
     Returns:
-    new_label -- output label with shape (classes, 1, m)
+    new_label -- output label with shape (classes, m)
     """
     m = label.shape[0]
     new_label = np.zeros((classes, m))

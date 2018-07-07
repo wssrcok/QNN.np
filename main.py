@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
-from utils import load_dataset
+from utils import load_dataset, randomize_batch
 from model_seq import MNIST_model, MNIST_model_b
 from layers import reduce_mean_softmax_cross_entropy_loss, \
                    initialize_weights_random_normal, update_weights
@@ -14,7 +14,12 @@ def plot_costs(costs, learning_rate):
     plt.title("Learning rate =" + str(learning_rate))
     plt.show()
 
-def train(models, layer_dims, train_set, truncate = False, learning_rate = 0.02, batch_size = 32, num_epochs = 10):
+def train(models, layer_dims, train_set, 
+          truncate = False, 
+          learning_rate = 0.02, 
+          decay_rate = 2,
+          batch_size = 32, 
+          num_epochs = 10):
     train_data, train_labels = train_set
     #numpy is really slow, so use 1k example instead of 50k originally
     train_data = train_data[0:1024]
@@ -30,9 +35,10 @@ def train(models, layer_dims, train_set, truncate = False, learning_rate = 0.02,
 
     batchs = train_data.shape[0] // batch_size
 
+    learning_rate_o = learning_rate
     for i in range(num_epochs):
-        # right now batch is not randomized
-        # TODO: randomize batch every epoch.
+        # batch is randomized
+        train_data, train_labels = randomize_batch(train_data, train_labels)
         for j in range(batchs):
             begin = j*batch_size
             end = (j+1)*batch_size
@@ -47,6 +53,7 @@ def train(models, layer_dims, train_set, truncate = False, learning_rate = 0.02,
             model_b(y_hat, caches, grads) # this will also update all gradients
 
             # update weights using minibatch gradient decent
+            learning_rate = 1 / (1 + decay_rate * i) * learning_rate_o
             update_weights(weights, grads, learning_rate, truncate = truncate)
 
             # print cost
@@ -79,7 +86,7 @@ def main():
         train(models, layer_dims, train_set,
             batch_size = int(sys.argv[1]),
             learning_rate = float(sys.argv[2]),
-            num_epochs = float(sys.argv[3]))
+            num_epochs = int(sys.argv[3]))
     else: 
         train(models, layer_dims, train_set,
             batch_size = int(sys.argv[1]),
