@@ -10,7 +10,7 @@ from layers import reduce_mean_softmax_cross_entropy_loss, \
 def plot_costs(costs, learning_rate):
     plt.plot(np.squeeze(costs))
     plt.ylabel('cost')
-    plt.xlabel('iterations (per tens)')
+    plt.xlabel('batchs (per tens)')
     plt.title("Learning rate =" + str(learning_rate))
     plt.show()
 
