@@ -8,6 +8,7 @@ def unbiased_rounding(x):
 
     Return:
     y -- y is x rounded to nearest integer(unbiased)
+    '''
     #generate a random np array with same shape as x
     r = np.random.rand(len(x.reshape(-1))).reshape(x.shape)
     x_decimal = np.remainder(x, 1)
