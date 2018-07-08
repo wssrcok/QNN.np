@@ -44,11 +44,11 @@ def truncate_weights(w, bits):
     Return:
     q -- quantized weights
     '''
-    weights_range = np.max(w) - np.min(w)
-    n = (1<<bits)/weights_range
-    #q = np.clip(np.round(n * w)/n, -weights_range/2, weights_range/2-1/n) # [-1,1)
-    q = np.clip(unbiased_rounding(n * w)/n, -weights_range/2, weights_range/2-1/n) # [-1,1)
-    return q
+    # weights_range = np.max(w) - np.min(w)
+    # delta = (1<<bits)/weights_range # delta is scaling factor
+    # q = np.clip(unbiased_rounding(delta * w)/delta, -weights_range/2, weights_range/2-1/delta) # [-1,1)
+    # return q
+    return w
 
 def truncate_features(f, bits):
     '''
@@ -60,7 +60,7 @@ def truncate_features(f, bits):
     q -- quantized weights
     '''
     _max = np.ndarray.max(f)
-    n = (1<<bits)/_max
-    #q = np.clip(np.round(f*n)/n, 0, _max-1/n) # [0,256)
+    n = (1<<bits)/_max # scaling factor
     q = np.clip(unbiased_rounding(f*n)/n, 0, _max-1/n) # [0,256)
     return q
+    # return f

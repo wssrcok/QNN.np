@@ -57,7 +57,7 @@ def train(models, layer_dims, train_set,
             update_weights(weights, grads, learning_rate, truncate = truncate)
 
             # print cost
-            print ("\nCost after iteration %i, batch %i: %f \n" %(i, j, cost))
+            print ("\nCost after Epoch %i, batch %i: %f \n" %(i+1, j+1, cost))
             costs.append(cost)
         print('Epoch %i, Done!\n' %(i+1))
 
