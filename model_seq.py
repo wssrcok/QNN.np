@@ -18,30 +18,34 @@ def Sequential_b(moduleList):
             output = m(output, cache, grads)
     return model
 
-MNIST_model = Sequential([
-    conv2d(weight_id = 1),
-    Quantized_ReLu(),
-    max_pool(),
-    conv2d(weight_id = 2),
-    Quantized_ReLu(),
-    max_pool(),
-    flatten(),
-    dense(weight_id = 3),
-    Quantized_ReLu(),
-    dense(weight_id = 4),
-    softmax()
-])
+def MNIST_model(truncate = False):
+    model = Sequential([
+        conv2d(weight_id = 1),
+        Quantized_ReLu(truncate = truncate),
+        max_pool(),
+        conv2d(weight_id = 2),
+        Quantized_ReLu(truncate = truncate),
+        max_pool(),
+        flatten(),
+        dense(weight_id = 3),
+        Quantized_ReLu(truncate = truncate),
+        dense(weight_id = 4),
+        softmax()
+    ])
+    return model
 
-MNIST_model_b = Sequential_b([
-    softmax_b(),
-    dense_b(grad_id = 4),
-    ReLu_b(),
-    dense_b(grad_id = 3),
-    unflatten(),
-    max_pool_b(),
-    ReLu_b(),
-    conv2d_b(grad_id = 2),
-    max_pool_b(),
-    ReLu_b(),
-    conv2d_b(grad_id = 1)
-])
+def MNIST_model_b():
+    model_b = Sequential_b([
+        softmax_b(),
+        dense_b(grad_id = 4),
+        ReLu_b(),
+        dense_b(grad_id = 3),
+        unflatten(),
+        max_pool_b(),
+        ReLu_b(),
+        conv2d_b(grad_id = 2),
+        max_pool_b(),
+        ReLu_b(),
+        conv2d_b(grad_id = 1)
+    ])
+    return model_b

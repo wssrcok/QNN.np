@@ -14,6 +14,26 @@ def plot_costs(costs, learning_rate):
     plt.title("Learning rate =" + str(learning_rate))
     plt.show()
 
+def predict(model, eval_set, weights):
+    eval_data, y = eval_set
+    y_hat, _ = model(eval_data[0:512], weights)
+    p = np.zeros(y.shape)
+    m = y_hat.shape[1]
+    c = y_hat.shape[0]
+    print("converting to hard max!")
+    for i in range(c):
+        for j in range(m):
+            if y_hat[i,j] == np.max(y_hat[:,j]):
+                p[i,j] = 1
+            else:
+                p[i,j] = 0
+    match = 0
+    print("start calculating accuracy!")
+    for i in range(m):
+        match += int(np.array_equal(p[:,i],y[:,i]))
+    print("the acuracy on eval_set is: " + str(match*100/m) + "%")
+            
+
 def train(models, layer_dims, train_set, 
           truncate = False, 
           learning_rate = 0.02, 
@@ -59,9 +79,13 @@ def train(models, layer_dims, train_set,
             # print cost
             print ("\nCost after Epoch %i, batch %i: %f \n" %(i+1, j+1, cost))
             costs.append(cost)
+
+        batch_size *= 2 # TESTCODE batch is starting with 1
+        batchs = train_data.shape[0] // batch_size # TESTCODE batch is starting with 1
         print('Epoch %i, Done!\n' %(i+1))
 
     plot_costs(costs, learning_rate)
+    return weights
 
 # TODO: add quantization
 def main():
@@ -78,21 +102,25 @@ def main():
     dense_dims = [3136, 1024, classes]
     layer_dims = (conv_dims, dense_dims)
 
-    models = (MNIST_model, MNIST_model_b) 
-
+    models = (MNIST_model(), MNIST_model_b()) 
+    weights = {}
     if len(sys.argv) == 1:
-        train(models, layer_dims, train_set)
+        weights = train(models, layer_dims, train_set)
     elif len(sys.argv) == 4:
-        train(models, layer_dims, train_set,
+        weights = train(models, layer_dims, train_set,
             batch_size = int(sys.argv[1]),
             learning_rate = float(sys.argv[2]),
             num_epochs = int(sys.argv[3]))
     else: 
-        train(models, layer_dims, train_set,
+        models = (MNIST_model(int(sys.argv[4])), MNIST_model_b())
+        weights = train(models, layer_dims, train_set,
             batch_size = int(sys.argv[1]),
             learning_rate = float(sys.argv[2]),
             num_epochs = int(sys.argv[3]),
             truncate = int(sys.argv[4]))
+
+    eval_set = (eval_data, eval_labels)
+    predict(MNIST_model, eval_set, weights)
 
 if __name__ == '__main__':
     main()
