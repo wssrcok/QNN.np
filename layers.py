@@ -79,7 +79,7 @@ def Quantized_ReLu(truncate = False):
         out = np.maximum(0,x)
         cache = x
         if truncate:
-            out = truncate_features(A, truncate)
+            out = truncate_features(x, truncate)
         return out, cache
     return layer
 
