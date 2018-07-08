@@ -78,10 +78,11 @@ def train(models, layer_dims, train_set,
 
             # print cost
             print ("\nCost after Epoch %i, batch %i: %f \n" %(i+1, j+1, cost))
-            costs.append(cost)
-
-        batch_size *= 2 # TESTCODE batch is starting with 1
-        batchs = train_data.shape[0] // batch_size # TESTCODE batch is starting with 1
+            if cost < 3: # TESTCODE
+                costs.append(cost)
+        if i % 2 == 0: # TESTCODE
+            batch_size *= 2 # TESTCODE batch is starting with 1
+            batchs = train_data.shape[0] // batch_size # TESTCODE batch is starting with 1
         print('Epoch %i, Done!\n' %(i+1))
 
     plot_costs(costs, learning_rate)
@@ -120,7 +121,7 @@ def main():
             truncate = int(sys.argv[4]))
 
     eval_set = (eval_data, eval_labels)
-    predict(MNIST_model, eval_set, weights)
+    predict(MNIST_model(), eval_set, weights)
 
 if __name__ == '__main__':
     main()
