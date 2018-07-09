@@ -48,7 +48,7 @@ def truncate_weights(w, bits):
     weights_range = np.max(w) - np.min(w)
     delta = (1<<bits)/weights_range # delta is scaling factor
     q = np.clip(unbiased_rounding(delta * w)/delta, -weights_range/2, weights_range/2-1/delta) # [-1,1)
-    return q
+    return q.astype(np.float32)
     # return w
 
 def truncate_features(f, bits):
@@ -64,5 +64,10 @@ def truncate_features(f, bits):
     _max = np.ndarray.max(f)
     n = (1<<bits)/_max # scaling factor
     q = np.clip(unbiased_rounding(f*n)/n, 0, _max-1/n) # [0,256)
-    return q
+    return q.astype(np.float32)
     # return f
+
+def truncate_grads(grads):
+    for k,v in grads.items():
+        grads[k] = truncate_weights(v, 2)
+    print('sample grads:' + str(grads['dW1'][0,0]))

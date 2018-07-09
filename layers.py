@@ -60,8 +60,8 @@ def conv2d_b(grad_id = -1):
         dA_prev_col = W_reshape.T @ dZ_reshaped
         # turn column to image
         dA_prev = col2im_indices(dA_prev_col, A_prev.shape, f, f, padding=pad, stride=stride)
-        grads["dW"+str(grad_id)] = dW
-        grads["db"+str(grad_id)] = db
+        grads["dW"+str(grad_id)] = dW.astype(np.float32)
+        grads["db"+str(grad_id)] = db.astype(np.float32)
         return dA_prev
     return layer
     
@@ -125,6 +125,7 @@ def softmax_b():
 def max_pool(hparameters = {'f': 2, 'stride': 2}):
     def layer(A_prev, dummy_parameters):
         print('max_pool',  end=' => ', flush=True)
+        print('\nsample feature: ', A_prev[0,0,0:5,0:5])
         # Let say our input X is 5x10x28x28
         # Our pooling parameter are: size = 2x2, stride = 2, padding = 0
         # i.e. result of 10 filters of 3x3 applied to 5 imgs of 28x28 with stride = 1 and padding = 1
@@ -223,7 +224,6 @@ def dense(weight_id = -1, truncate = 0):
         Z = np.dot(W,A)+b
         assert(Z.shape == (W.shape[0], A.shape[1]))
         cache = (A, W, b)
-        
         return Z, cache
     return layer
 
@@ -252,8 +252,8 @@ def dense_b(grad_id = -1):
         assert (dA_prev.shape == A_prev.shape)
         assert (dW.shape == W.shape)
         assert (db.shape == b.shape)
-        grads["dW"+str(grad_id)] = dW
-        grads["db"+str(grad_id)] = db
+        grads["dW"+str(grad_id)] = dW.astype(np.float32)
+        grads["db"+str(grad_id)] = db.astype(np.float32)
         return dA_prev
     return layer
 
@@ -270,12 +270,10 @@ def reduce_mean_softmax_cross_entropy_loss(Y_hat, Y, truncate = False):
     m = Y.shape[1]
     if truncate:
         Y = np.clip(Y, 1/256, 255/256) # TODO: clip value may need to be changed.
-    # Compute loss from aL and y.
+    # Compute loss from y_hat and y.
     cost = (-1/m) * np.sum(Y*np.log(Y_hat))
-    
     cost = np.squeeze(cost)      # To make sure your cost's shape is what we expect (e.g. this turns [[17]] into 17).
-    
-    return cost
+    return cost.astype(np.float32)
 
 def initialize_weights_random_normal(filter_dims, layer_dims, truncate = 0, seed = 1):
     '''
@@ -293,16 +291,16 @@ def initialize_weights_random_normal(filter_dims, layer_dims, truncate = 0, seed
     l = 0
     for l in range(L):
         n_C, n_C_prev, f, f = filter_dims[l]
-        parameters['W' + str(l+1)] = np.random.randn(n_C, n_C_prev, f, f) * 0.25
-        parameters['b' + str(l+1)] = np.zeros((n_C,1))
+        parameters['W' + str(l+1)] = np.random.randn(n_C, n_C_prev, f, f).astype(np.float32) * np.float32(0.25)
+        parameters['b' + str(l+1)] = np.zeros((n_C,1)).astype(np.float32)
         if truncate:
             parameters["W" + str(l+1)] = truncate_weights(parameters["W" + str(l+1)], truncate)
         l+=1
     
     for l in range(1, L2):
         
-        parameters['W' + str(l+L)] = np.random.randn(layer_dims[l],layer_dims[l-1])*0.01
-        parameters['b' + str(l+L)] = np.zeros((layer_dims[l],1))
+        parameters['W' + str(l+L)] = np.random.randn(layer_dims[l],layer_dims[l-1]).astype(np.float32)*np.float32(0.01)
+        parameters['b' + str(l+L)] = np.zeros((layer_dims[l],1)).astype(np.float32)
         if truncate:
             parameters["W" + str(l+L)] = truncate_weights(parameters["W" + str(l+L)], truncate, weights_range = 0.08)
             parameters["b" + str(l+L)] = truncate_weights(parameters["b" + str(l+L)], truncate, weights_range = 0.08)
@@ -314,9 +312,10 @@ def update_weights(parameters, grads, learning_rate, truncate = 0):
     '''
     L = len(parameters) // 2
     for l in range(L):
-        parameters["W" + str(l+1)] -= learning_rate * grads['dW'+str(l+1)]
-        parameters["b" + str(l+1)] -= learning_rate * grads['db'+str(l+1)]
+        parameters["W" + str(l+1)] -= np.float32(learning_rate * grads['dW'+str(l+1)])
+        parameters["b" + str(l+1)] -= np.float32(learning_rate * grads['db'+str(l+1)])
         if truncate:
             parameters["W" + str(l+1)] = truncate_weights(parameters["W" + str(l+1)], truncate)
             parameters["b" + str(l+1)] = truncate_weights(parameters["b" + str(l+1)], truncate)
+    print('sample weights: ', parameters['W1'][0,0,0:5,0:5])
     return parameters

@@ -6,6 +6,7 @@ from utils import load_dataset, randomize_batch
 from model_seq import MNIST_model, MNIST_model_b
 from layers import reduce_mean_softmax_cross_entropy_loss, \
                    initialize_weights_random_normal, update_weights
+from quantize import truncate_grads # TEST
 
 def plot_costs(costs, learning_rate):
     plt.plot(np.squeeze(costs))
@@ -42,7 +43,7 @@ def train(models, layer_dims, train_set,
           num_epochs = 10):
     train_data, train_labels = train_set
     #numpy is really slow, so use 1k example instead of 50k originally
-    train_data = train_data[0:1024]
+    train_data = train_data[0:1024].astype(np.float32)
     train_labels = train_labels[:,0:1024]
 
     model, model_b = models
@@ -72,17 +73,19 @@ def train(models, layer_dims, train_set,
             # model_b goes entire backward pass
             model_b(y_hat, caches, grads) # this will also update all gradients
 
+            truncate_grads(grads) # TESTCODE
+
             # update weights using minibatch gradient decent
             learning_rate = 1 / (1 + decay_rate * i) * learning_rate_o
-            update_weights(weights, grads, learning_rate, truncate = truncate)
+            update_weights(weights, grads, np.float32(learning_rate), truncate = truncate)
 
             # print cost
             print ("\nCost after Epoch %i, batch %i: %f \n" %(i+1, j+1, cost))
-            if cost < 3: # TESTCODE
+            if cost < 3:
                 costs.append(cost)
-        if i % 2 == 0: # TESTCODE
-            batch_size *= 2 # TESTCODE batch is starting with 1
-            batchs = train_data.shape[0] // batch_size # TESTCODE batch is starting with 1
+        # if i % 2 == 0: # TESTCODE
+        #     batch_size *= 2 # TESTCODE batch is starting with 1
+        #     batchs = train_data.shape[0] // batch_size # TESTCODE batch is starting with 1
         print('Epoch %i, Done!\n' %(i+1))
 
     plot_costs(costs, learning_rate)
