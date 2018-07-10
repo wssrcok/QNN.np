@@ -11,7 +11,6 @@ def load_dataset():
     eval_data = mnist.test.images # Returns np.array
     eval_labels_old = np.asarray(mnist.test.labels, dtype=np.int32)
     eval_labels = one_hot_label(classes, eval_labels_old)
-    features = train_data.shape[0]
 
     train_data = train_data.reshape(55000,1,28,28)
     eval_data = eval_data.reshape(10000,1,28,28)

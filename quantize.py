@@ -35,7 +35,7 @@ def test_ub_rounding_negative(num = -0.1, k = 1000):
 
 
 
-def truncate_weights(w, bits):
+def truncate_signed(w, bits):
     '''
     Argument:
     w -- np array of weights
@@ -51,7 +51,7 @@ def truncate_weights(w, bits):
     return q.astype(np.float32)
     # return w
 
-def truncate_features(f, bits):
+def truncate_unsigned(f, bits):
     '''
     Argument:
     f -- np array of features
@@ -67,7 +67,7 @@ def truncate_features(f, bits):
     return q.astype(np.float32)
     # return f
 
-def truncate_grads(grads):
-    for k,v in grads.items():
-        grads[k] = truncate_weights(v, 2)
-    print('sample grads:' + str(grads['dW1'][0,0]))
+def truncate_grads(grads, truncate):
+    if truncate:
+        for k,v in grads.items():
+            grads[k] = truncate_signed(v, truncate)

@@ -34,18 +34,18 @@ def MNIST_model(truncate = False):
     ])
     return model
 
-def MNIST_model_b():
+def MNIST_model_b(truncate = False):
     model_b = Sequential_b([
         softmax_b(),
-        dense_b(grad_id = 4),
+        Quantized_dense_b(grad_id = 4, truncate = truncate),
         ReLu_b(),
-        dense_b(grad_id = 3),
+        Quantized_dense_b(grad_id = 3, truncate = truncate),
         unflatten(),
         max_pool_b(),
         ReLu_b(),
-        conv2d_b(grad_id = 2),
+        Quantized_conv2d_b(grad_id = 2, truncate = truncate),
         max_pool_b(),
         ReLu_b(),
-        conv2d_b(grad_id = 1)
+        Quantized_conv2d_b(grad_id = 1, truncate = truncate)
     ])
     return model_b

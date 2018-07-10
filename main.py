@@ -36,7 +36,8 @@ def predict(model, eval_set, weights):
             
 
 def train(models, layer_dims, train_set, 
-          truncate = False, 
+          truncate_f = False,
+          truncate_b = False, 
           learning_rate = 0.02, 
           decay_rate = 2,
           batch_size = 32, 
@@ -69,15 +70,15 @@ def train(models, layer_dims, train_set,
             # model goes entire forward pass
             y_hat, caches = model(x, weights)
             caches[-1] = y # y is cached for softmax_b
-            cost = reduce_mean_softmax_cross_entropy_loss(y_hat, y, truncate = truncate)
+            cost = reduce_mean_softmax_cross_entropy_loss(y_hat, y, truncate = truncate_f)
             # model_b goes entire backward pass
             model_b(y_hat, caches, grads) # this will also update all gradients
 
-            truncate_grads(grads) # TESTCODE
+            truncate_grads(grads, truncate_b) # TESTCODE
 
             # update weights using minibatch gradient decent
             learning_rate = 1 / (1 + decay_rate * i) * learning_rate_o
-            update_weights(weights, grads, np.float32(learning_rate), truncate = truncate)
+            update_weights(weights, grads, np.float32(learning_rate), truncate = truncate_f)
 
             # print cost
             print ("\nCost after Epoch %i, batch %i: %f \n" %(i+1, j+1, cost))
@@ -93,10 +94,12 @@ def train(models, layer_dims, train_set,
 
 # TODO: add quantization
 def main():
-    if len(sys.argv) != 5 and len(sys.argv) != 4 and len(sys.argv) != 1:
+    args = len(sys.argv)
+    if args == 0 or args == 2 or args == 3:
         print('usage1: $ python main.py')
         print('usage2: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)>')
         print('usage3: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)>')
+        print('usage3: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)> <quantize_grads(int)>')
         return None
 
     train_data, train_labels, eval_data, eval_labels, classes = load_dataset()
@@ -106,22 +109,29 @@ def main():
     dense_dims = [3136, 1024, classes]
     layer_dims = (conv_dims, dense_dims)
 
-    models = (MNIST_model(), MNIST_model_b()) 
     weights = {}
-    if len(sys.argv) == 1:
-        weights = train(models, layer_dims, train_set)
-    elif len(sys.argv) == 4:
-        weights = train(models, layer_dims, train_set,
-            batch_size = int(sys.argv[1]),
-            learning_rate = float(sys.argv[2]),
-            num_epochs = int(sys.argv[3]))
-    else: 
-        models = (MNIST_model(int(sys.argv[4])), MNIST_model_b())
-        weights = train(models, layer_dims, train_set,
-            batch_size = int(sys.argv[1]),
-            learning_rate = float(sys.argv[2]),
-            num_epochs = int(sys.argv[3]),
-            truncate = int(sys.argv[4]))
+    batch_size = 32
+    learning_rate = 0.02
+    num_epochs = 10
+    truncate_f = False
+    truncate_b = False
+    if args >= 4:
+        batch_size = int(sys.argv[1])
+        learning_rate = float(sys.argv[2])
+        num_epochs = int(sys.argv[3])
+    if args >= 5:
+        truncate_f = int(sys.argv[4])
+    if args == 6:
+        truncate_b = int(sys.argv[5])
+        
+    models = (MNIST_model(truncate_f), MNIST_model_b(truncate_b))
+    print(truncate_b, truncate_f)
+    weights = train(models, layer_dims, train_set,
+                    batch_size=batch_size,
+                    learning_rate=learning_rate,
+                    num_epochs=num_epochs,
+                    truncate_f=truncate_f,
+                    truncate_b=truncate_b)
 
     eval_set = (eval_data, eval_labels)
     predict(MNIST_model(), eval_set, weights)
