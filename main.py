@@ -39,7 +39,7 @@ def train(models, layer_dims, train_set,
           truncate_f = False,
           truncate_b = False, 
           learning_rate = 0.02, 
-          decay_rate = 2,
+          decay_rate = 0,
           batch_size = 32, 
           num_epochs = 10):
     train_data, train_labels = train_set
@@ -99,7 +99,7 @@ def main():
         print('usage1: $ python main.py')
         print('usage2: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)>')
         print('usage3: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)>')
-        print('usage3: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)> <quantize_grads(int)>')
+        print('usage4: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)> <quantize_grads(int)>')
         return None
 
     train_data, train_labels, eval_data, eval_labels, classes = load_dataset()
