@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from utils import load_dataset, randomize_batch
-from model_seq import MNIST_model, MNIST_model_b
+from model_seq import MNIST_model, MNIST_model_b, cifar10_model, cifar10_model_b
 from layers import reduce_mean_softmax_cross_entropy_loss, \
                    initialize_weights_random_normal, update_weights
 from quantize import truncate_grads # TEST
@@ -14,6 +14,14 @@ def plot_costs(costs, learning_rate):
     plt.xlabel('batchs (per tens)')
     plt.title("Learning rate =" + str(learning_rate))
     plt.show()
+
+def save_weights(weights):
+    print('saving weights')
+    np.save('./weights', weights)
+
+def load_weights():
+    print('loading weights')
+    return np.load('./weights.npy').item()
 
 def predict(model, eval_set, weights):
     eval_data, y = eval_set
@@ -53,7 +61,12 @@ def train(models, layer_dims, train_set,
     conv_dim, dense_dim = layer_dims
     
     # initialize weights
-    weights = initialize_weights_random_normal(conv_dim, dense_dim, seed = 1)
+    weights = {}
+    try:
+        weights = load_weights()
+    except IOError:
+        print('loading failed, initialize new weights')
+        weights = initialize_weights_random_normal(conv_dim, dense_dim, seed = 1)
 
     batchs = train_data.shape[0] // batch_size
 
@@ -102,11 +115,14 @@ def main():
         print('usage4: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)> <quantize_grads(int)>')
         return None
 
-    train_data, train_labels, eval_data, eval_labels, classes = load_dataset()
+    train_data, train_labels, eval_data, eval_labels, classes = load_dataset(data = 'cifar10')
+
     train_set = (train_data, train_labels)
 
-    conv_dims = [(32,1,5,5),(64,32,5,5)]
-    dense_dims = [3136, 1024, classes]
+    # conv_dims = [(32,1,5,5),(64,32,5,5)] these two are for MNIST
+    # dense_dims = [3136, 1024, classes]
+    conv_dims = [(32,3,3,3),(32,32,3,3),(64,32,3,3),(64,64,3,3)]
+    dense_dims = [4096, 512, classes]
     layer_dims = (conv_dims, dense_dims)
 
     weights = {}
@@ -124,8 +140,8 @@ def main():
     if args == 6:
         truncate_b = int(sys.argv[5])
         
-    models = (MNIST_model(truncate_f), MNIST_model_b(truncate_b))
-    print(truncate_b, truncate_f)
+    #models = (MNIST_model(truncate_f), MNIST_model_b(truncate_b))
+    models = (cifar10_model(truncate_f), cifar10_model_b(truncate_b))
     weights = train(models, layer_dims, train_set,
                     batch_size=batch_size,
                     learning_rate=learning_rate,
@@ -135,6 +151,7 @@ def main():
 
     eval_set = (eval_data, eval_labels)
     predict(MNIST_model(), eval_set, weights)
+    save_weights(weights)
 
 if __name__ == '__main__':
     main()

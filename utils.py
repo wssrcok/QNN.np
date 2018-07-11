@@ -1,20 +1,38 @@
 import numpy as np
 import tensorflow as tf
 
-def load_dataset():
+def load_dataset(data = 'MNIST'):
     # Load training and eval data
-    mnist = tf.contrib.learn.datasets.load_dataset("mnist")
-    train_data = mnist.train.images # Returns np.array
-    classes = 10
-    train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
-    train_labels = one_hot_label(classes, train_labels)
-    eval_data = mnist.test.images # Returns np.array
-    eval_labels_old = np.asarray(mnist.test.labels, dtype=np.int32)
-    eval_labels = one_hot_label(classes, eval_labels_old)
+    if data == 'MNIST':
+        mnist = tf.contrib.learn.datasets.load_dataset("mnist")
+        train_data = mnist.train.images # Returns np.array
+        classes = 10
+        train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
+        train_labels = one_hot_label(classes, train_labels)
+        eval_data = mnist.test.images # Returns np.array
+        eval_labels_old = np.asarray(mnist.test.labels, dtype=np.int32)
+        eval_labels = one_hot_label(classes, eval_labels_old)
 
-    train_data = train_data.reshape(55000,1,28,28)
-    eval_data = eval_data.reshape(10000,1,28,28)
-    return train_data, train_labels, eval_data, eval_labels, classes
+        train_data = train_data.reshape(55000,1,28,28)
+        eval_data = eval_data.reshape(10000,1,28,28)
+
+        return train_data, train_labels, eval_data, eval_labels, classes
+
+    elif data == 'cifar10':
+        def unpickle(file):
+            import pickle
+            with open(file, 'rb') as fo:
+                dict = pickle.load(fo, encoding='bytes')
+            return dict
+        cifar10 = unpickle('cifar10-data/data_batch_1')
+        classes = 10
+        train_data = cifar10[b'data'].reshape(10000,3,32,32)
+        train_labels = one_hot_label(classes, np.array(cifar10[b'labels']))
+        cifar10_eval = unpickle('cifar10-data/data_batch_2')
+        eval_data = cifar10_eval[b'data'].reshape(10000,3,32,32)
+        eval_labels = one_hot_label(classes, np.array(cifar10_eval[b'labels']))
+
+        return train_data, train_labels, eval_data, eval_labels, classes
 
 def randomize_batch(train_data, train_labels, seed = 1):
     np.random.seed(seed)

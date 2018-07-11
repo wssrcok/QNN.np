@@ -2,7 +2,7 @@ import numpy as np
 from quantize import truncate_unsigned, truncate_signed
 from im2col import *
 
-def conv2d(weight_id = -1, hparameters = {'stride': 1, 'pad': 2}, truncate = 0):
+def conv2d(weight_id = -1, hparameters = {'stride': 1, 'pad': 'same'}, truncate = 0):
     def layer(A_prev, parameters):
         print('conv2d',  end=' => ', flush=True)
         W = parameters["W"+str(weight_id)]
@@ -11,6 +11,8 @@ def conv2d(weight_id = -1, hparameters = {'stride': 1, 'pad': 2}, truncate = 0):
         m, n_C_prev, n_H_prev, n_W_prev = A_prev.shape
 
         stride = hparameters['stride']
+        if hparameters['pad'] == 'same':
+            hparameters['pad'] = (f - stride - n_H_prev + stride * n_H_prev) // 2 
         pad = hparameters['pad']
         A_prev_col = im2col_indices(A_prev, f, f, padding=pad, stride=stride)
         W_col = W.reshape(n_C, -1)
@@ -294,7 +296,7 @@ def initialize_weights_random_normal(filter_dims, layer_dims, truncate = 0, seed
     l = 0
     for l in range(L):
         n_C, n_C_prev, f, f = filter_dims[l]
-        parameters['W' + str(l+1)] = np.random.randn(n_C, n_C_prev, f, f).astype(np.float32) * np.float32(0.25)
+        parameters['W' + str(l+1)] = np.random.randn(n_C, n_C_prev, f, f).astype(np.float32) * np.float32(0.02)
         parameters['b' + str(l+1)] = np.zeros((n_C,1)).astype(np.float32)
         if truncate:
             parameters["W" + str(l+1)] = truncate_signed(parameters["W" + str(l+1)], truncate)

@@ -49,3 +49,47 @@ def MNIST_model_b(truncate = False):
         Quantized_conv2d_b(grad_id = 1, truncate = truncate)
     ])
     return model_b
+
+def cifar10_model(truncate = False):
+    model = Sequential([
+        conv2d(weight_id = 1),
+        Quantized_ReLu(truncate = truncate),
+        conv2d(weight_id = 2),
+        Quantized_ReLu(truncate = truncate),
+        max_pool(),
+
+        conv2d(weight_id = 3),
+        Quantized_ReLu(truncate = truncate),
+        conv2d(weight_id = 4),
+        Quantized_ReLu(truncate = truncate),
+        max_pool(),
+        
+        flatten(),
+        dense(weight_id = 5),
+        Quantized_ReLu(truncate = truncate),
+        dense(weight_id = 6),
+        softmax()
+    ])
+    return model
+
+def cifar10_model_b(truncate = False):
+    model_b = Sequential_b([
+        softmax_b(),
+        Quantized_dense_b(grad_id = 6, truncate = truncate),
+        ReLu_b(),
+        Quantized_dense_b(grad_id = 5, truncate = truncate),
+        unflatten(),
+
+        max_pool_b(),
+        ReLu_b(),
+        Quantized_conv2d_b(grad_id = 4, truncate = truncate),
+        ReLu_b(),
+        Quantized_conv2d_b(grad_id = 3, truncate = truncate),
+        
+        max_pool_b(),
+        ReLu_b(),
+        Quantized_conv2d_b(grad_id = 2, truncate = truncate),
+        ReLu_b(),
+        Quantized_conv2d_b(grad_id = 1, truncate = truncate)
+    ])
+    return model_b

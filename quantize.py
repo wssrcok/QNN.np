@@ -46,8 +46,9 @@ def truncate_signed(w, bits):
     '''
     #bits = 8
     weights_range = np.max(w) - np.min(w)
-    delta = (1<<bits)/weights_range # delta is scaling factor
-    q = np.clip(unbiased_rounding(delta * w)/delta, -weights_range/2, weights_range/2-1/delta) # [-1,1)
+    _range = 2**bits
+    delta = _range/weights_range # delta is scaling factor
+    q = np.clip(unbiased_rounding(delta * w)/delta, -_range/2*1/delta, (_range/2-1)/delta) # [-1,1)
     return q.astype(np.float32)
     # return w
 
@@ -63,7 +64,7 @@ def truncate_unsigned(f, bits):
     #bits = 2
     _max = np.ndarray.max(f)
     n = (1<<bits)/_max # scaling factor
-    q = np.clip(unbiased_rounding(f*n)/n, 0, _max-1/n) # [0,256)
+    q = np.clip(unbiased_rounding(f*n)/n, 0, (2**bits-1)/n) # [0,256)
     return q.astype(np.float32)
     # return f
 
