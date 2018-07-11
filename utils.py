@@ -26,10 +26,10 @@ def load_dataset(data = 'MNIST'):
             return dict
         cifar10 = unpickle('cifar10-data/data_batch_1')
         classes = 10
-        train_data = cifar10[b'data'].reshape(10000,3,32,32)
+        train_data = cifar10[b'data'].reshape(10000,3,32,32)*0.01
         train_labels = one_hot_label(classes, np.array(cifar10[b'labels']))
         cifar10_eval = unpickle('cifar10-data/data_batch_2')
-        eval_data = cifar10_eval[b'data'].reshape(10000,3,32,32)
+        eval_data = cifar10_eval[b'data'].reshape(10000,3,32,32)*0.01
         eval_labels = one_hot_label(classes, np.array(cifar10_eval[b'labels']))
 
         return train_data, train_labels, eval_data, eval_labels, classes

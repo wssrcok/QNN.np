@@ -69,7 +69,7 @@ def train(models, layer_dims, train_set,
         weights = initialize_weights_random_normal(conv_dim, dense_dim, seed = 1)
 
     batchs = train_data.shape[0] // batch_size
-
+    print(batchs)
     learning_rate_o = learning_rate
     for i in range(num_epochs):
         # batch is randomized
@@ -150,7 +150,8 @@ def main():
                     truncate_b=truncate_b)
 
     eval_set = (eval_data, eval_labels)
-    predict(MNIST_model(), eval_set, weights)
+    # predict(MNIST_model(), eval_set, weights)
+    predict(cifar10_model(), eval_set, weights)
     save_weights(weights)
 
 if __name__ == '__main__':
