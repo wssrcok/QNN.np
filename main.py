@@ -69,7 +69,6 @@ def train(models, layer_dims, train_set,
         weights = initialize_weights_random_normal(conv_dim, dense_dim, seed = 1)
 
     batchs = train_data.shape[0] // batch_size
-    print(batchs)
     learning_rate_o = learning_rate
     for i in range(num_epochs):
         # batch is randomized
@@ -86,12 +85,12 @@ def train(models, layer_dims, train_set,
             cost = reduce_mean_softmax_cross_entropy_loss(y_hat, y, truncate = truncate_f)
             # model_b goes entire backward pass
             model_b(y_hat, caches, grads) # this will also update all gradients
-
             truncate_grads(grads, truncate_b) # TESTCODE
-
             # update weights using minibatch gradient decent
             learning_rate = 1 / (1 + decay_rate * i) * learning_rate_o
-            update_weights(weights, grads, np.float32(learning_rate), truncate = truncate_f)
+            update_weights(weights, grads, np.float32(learning_rate), 
+                           optimizer = 'RMSProp', 
+                           truncate = truncate_f)
 
             # print cost
             print ("\nCost after Epoch %i, batch %i: %f \n" %(i+1, j+1, cost))
@@ -119,7 +118,7 @@ def main():
 
     train_set = (train_data, train_labels)
 
-    # conv_dims = [(32,1,5,5),(64,32,5,5)] these two are for MNIST
+    # conv_dims = [(32,1,5,5),(64,32,5,5)] #these two are for MNIST
     # dense_dims = [3136, 1024, classes]
     conv_dims = [(32,3,3,3),(32,32,3,3),(64,32,3,3),(64,64,3,3)]
     dense_dims = [4096, 512, classes]
@@ -150,7 +149,7 @@ def main():
                     truncate_b=truncate_b)
 
     eval_set = (eval_data, eval_labels)
-    # predict(MNIST_model(), eval_set, weights)
+    #predict(MNIST_model(), eval_set, weights)
     predict(cifar10_model(), eval_set, weights)
     save_weights(weights)
 

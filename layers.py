@@ -296,7 +296,7 @@ def initialize_weights_random_normal(filter_dims, layer_dims, truncate = 0, seed
     l = 0
     for l in range(L):
         n_C, n_C_prev, f, f = filter_dims[l]
-        parameters['W' + str(l+1)] = np.random.randn(n_C, n_C_prev, f, f).astype(np.float32) * np.float32(0.02)
+        parameters['W' + str(l+1)] = np.random.randn(n_C, n_C_prev, f, f).astype(np.float32) * np.float32(0.05)
         parameters['b' + str(l+1)] = np.zeros((n_C,1)).astype(np.float32)
         if truncate:
             parameters["W" + str(l+1)] = truncate_signed(parameters["W" + str(l+1)], truncate)
@@ -304,7 +304,7 @@ def initialize_weights_random_normal(filter_dims, layer_dims, truncate = 0, seed
     
     for l in range(1, L2):
         
-        parameters['W' + str(l+L)] = np.random.randn(layer_dims[l],layer_dims[l-1]).astype(np.float32)*np.float32(0.01)
+        parameters['W' + str(l+L)] = np.random.randn(layer_dims[l],layer_dims[l-1]).astype(np.float32)*np.float32(0.05)
         parameters['b' + str(l+L)] = np.zeros((layer_dims[l],1)).astype(np.float32)
         if truncate:
             parameters["W" + str(l+L)] = truncate_signed(parameters["W" + str(l+L)], truncate, weights_range = 0.08)
@@ -312,14 +312,40 @@ def initialize_weights_random_normal(filter_dims, layer_dims, truncate = 0, seed
         l+=1
     return parameters
 
-def update_weights(parameters, grads, learning_rate, truncate = 0):
+def update_weights(parameters, grads, learning_rate, optimizer = 'GD', truncate = False):
     '''
     '''
     L = len(parameters) // 2
-    for l in range(L):
-        parameters["W" + str(l+1)] -= np.float32(learning_rate * grads['dW'+str(l+1)])
-        parameters["b" + str(l+1)] -= np.float32(learning_rate * grads['db'+str(l+1)])
-        if truncate:
-            parameters["W" + str(l+1)] = truncate_signed(parameters["W" + str(l+1)], truncate)
-            parameters["b" + str(l+1)] = truncate_signed(parameters["b" + str(l+1)], truncate)
+    if optimizer == 'GD':
+        for l in range(L):
+            parameters["W" + str(l+1)] -= np.float32(learning_rate * grads['dW'+str(l+1)])
+            parameters["b" + str(l+1)] -= np.float32(learning_rate * grads['db'+str(l+1)])
+    elif optimizer == 'GD_with_momentum':
+        for l in range(L):
+            if ('VdW'+str(l+1)) not in grads:
+                grads['VdW'+str(l+1)] = 0
+                grads['Vdb'+str(l+1)] = 0
+            VdW, Vdb, dW, db = grads['VdW'+str(l+1)], grads['Vdb'+str(l+1)], grads['dW'+str(l+1)], grads['db'+str(l+1)]
+            beta = 0.5
+            VdW = beta * VdW + (1-beta) * dW
+            Vdb = beta * Vdb + (1-beta) * db
+            parameters["W" + str(l+1)] -= np.float32(learning_rate * VdW)
+            parameters["b" + str(l+1)] -= np.float32(learning_rate * Vdb)
+    elif optimizer == 'RMSProp':
+        for l in range(L):
+            dW, db = grads['dW'+str(l+1)], grads['db'+str(l+1)]
+            if ('SdW'+str(l+1)) not in grads:
+                grads['SdW'+str(l+1)] = 0.5
+                grads['Sdb'+str(l+1)] = 0.5
+            SdW, Sdb = grads['SdW'+str(l+1)], grads['Sdb'+str(l+1)]
+            beta = 0.9
+            SdW = beta * SdW + (1-beta) * dW * dW
+            Sdb = beta * Sdb + (1-beta) * db * db
+            denW = np.sqrt(SdW) + 0.00000001
+            denb = np.sqrt(Sdb) + 0.00000001
+            parameters["W" + str(l+1)] -= np.float32(learning_rate * dW / denW)
+            parameters["b" + str(l+1)] -= np.float32(learning_rate * db / denb)
+    if truncate:
+        for k,v in parameters.items():
+            parameters[k] = truncate_signed(v,truncate)
     return parameters
