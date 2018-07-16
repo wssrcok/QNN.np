@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import scipy.io as sio
 
 def load_dataset(data = 'MNIST'):
     # Load training and eval data
@@ -31,6 +32,17 @@ def load_dataset(data = 'MNIST'):
         cifar10_eval = unpickle('cifar10-data/data_batch_2')
         eval_data = cifar10_eval[b'data'].reshape(10000,3,32,32)/256
         eval_labels = one_hot_label(classes, np.array(cifar10_eval[b'labels']))
+        
+        return train_data, train_labels, eval_data, eval_labels, classes
+
+    elif data == 'svhn':
+        svhn = sio.loadmat('svhn-data/train_32x32.mat')
+        classes = 10
+        train_data = svhn['X'].transpose(3,2,0,1)/256
+        train_labels = one_hot_label(classes, svhn['y'].reshape(-1)-1)
+        svhn_eval = sio.loadmat('svhn-data/test_32x32.mat')
+        eval_data = svhn_eval['X'].transpose(3,2,0,1)/256
+        eval_labels = one_hot_label(classes, svhn_eval['y'].reshape(-1)-1)
 
         return train_data, train_labels, eval_data, eval_labels, classes
 

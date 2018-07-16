@@ -4,7 +4,7 @@ from im2col import *
 
 def conv2d(weight_id = -1, hparameters = {'stride': 1, 'pad': 'same'}, truncate = 0):
     def layer(A_prev, parameters):
-        print('conv2d',  end=' => ', flush=True)
+        #print('conv2d',  end=' => ', flush=True)
         W = parameters["W"+str(weight_id)]
         b = parameters["b"+str(weight_id)]
         n_C, n_C_prev, f, f = W.shape
@@ -17,6 +17,7 @@ def conv2d(weight_id = -1, hparameters = {'stride': 1, 'pad': 'same'}, truncate 
         A_prev_col = im2col_indices(A_prev, f, f, padding=pad, stride=stride)
         W_col = W.reshape(n_C, -1)
 
+        #print(W_col.shape, A_prev_col.shape)
         out = W_col @ A_prev_col + b
         n_H_shape = (n_H_prev - f + 2 * pad) / stride + 1
         n_W_shape = (n_W_prev - f + 2 * pad) / stride + 1
@@ -45,13 +46,14 @@ def Quantized_conv2d_b(grad_id = -1, truncate = False):
           numpy array of shape (n_C, 1)
     '''
     def layer(dZ, cache, grads):
-        print('conv2d_b',  end=' => ', flush=True)
+        #print('conv2d_b',  end=' => ', flush=True)
         A_prev, W, b, hparameters, A_prev_col = cache
         n_C, n_C_prev, f, f = W.shape 
 
         db = np.sum(dZ, axis=(0, 2, 3))
         db = db.reshape(n_C, -1)
         dZ_reshaped = dZ.transpose(1, 2, 3, 0).reshape(n_C, -1)
+        #print(dZ_reshaped.shape, A_prev_col.T.shape)
         dW = dZ_reshaped @ A_prev_col.T
         dW = dW.reshape(W.shape)
 
@@ -59,6 +61,7 @@ def Quantized_conv2d_b(grad_id = -1, truncate = False):
         pad = hparameters['pad']
 
         W_reshape = W.reshape(n_C, -1)
+        #print(W_reshape.T.shape, dZ_reshaped.shape)
         dA_prev_col = W_reshape.T @ dZ_reshaped
         # turn column to image
         dA_prev = col2im_indices(dA_prev_col, A_prev.shape, f, f, padding=pad, stride=stride)
@@ -108,9 +111,29 @@ def ReLu_b():
         return dZ
     return layer
 
+def dropout(keep_prob):
+    assert(keep_prob <= 1 and keep_prob >= 0)
+    def layer(A, dummy_parameters):
+        # d = np.random.rand(A_prev.shape[0], A_prev.shape[1]) < keep_prob
+        # A = d * A_prev
+        # A /= keep_prob
+        d = np.random.binomial(1, keep_prob, size=A.shape)
+        A *= d
+        A /= keep_prob
+        cache = d
+        return A, cache
+    return layer
+
+def dropout_b():
+    def layer(dA, cache, dummy_grads):
+        d = cache
+        dA *= d
+        return dA
+    return layer
+
 def softmax():
     def layer(Z, dummy_parameters):
-        print('softmax')
+        #print('softmax')
         Z_exp = np.exp(Z);
         den = np.sum(Z_exp, axis = 0);
         A = Z_exp / den;
@@ -120,7 +143,7 @@ def softmax():
 
 def softmax_b():
     def layer(Y_hat, cache, dummy_grads):
-        print('softmax_b',  end=' => ', flush=True)
+        #print('softmax_b',  end=' => ', flush=True)
         Y = cache
         dZ = Y_hat - Y
         return dZ
@@ -128,7 +151,7 @@ def softmax_b():
 
 def max_pool(hparameters = {'f': 2, 'stride': 2}):
     def layer(A_prev, dummy_parameters):
-        print('max_pool',  end=' => ', flush=True)
+        #print('max_pool',  end=' => ', flush=True)
         # Let say our input X is 5x10x28x28
         # Our pooling parameter are: size = 2x2, stride = 2, padding = 0
         # i.e. result of 10 filters of 3x3 applied to 5 imgs of 28x28 with stride = 1 and padding = 1
@@ -162,7 +185,7 @@ def max_pool(hparameters = {'f': 2, 'stride': 2}):
 
 def max_pool_b():
     def layer(dA, cache, dummy_grads):
-        print('max_pool_b',  end=' => ', flush=True)
+        #print('max_pool_b',  end=' => ', flush=True)
         (A_prev, A_prev_col, max_idx, hparameters) = cache
         dA_prev_col = np.zeros_like(A_prev_col)
 
@@ -192,7 +215,7 @@ def max_pool_b():
 
 def flatten():
     def layer(x, dummy_parameters):
-        print('flatten',  end=' => ', flush=True)
+        #print('flatten',  end=' => ', flush=True)
         cache = x.shape
         out = x.reshape(cache[0],-1).T
         return out, cache
@@ -200,7 +223,7 @@ def flatten():
 
 def unflatten():
     def layer(x, cache, dummy_grads):
-        print('unflatten',  end=' => ', flush=True)
+        #print('unflatten',  end=' => ', flush=True)
         out = x.T
         a,b,c,d = cache
         out = out.reshape(a,b,c,d)
@@ -221,7 +244,7 @@ def dense(weight_id = -1):
     cache -- a python dictionary containing "A", "W" and "b" ; stored for computing the backward pass efficiently
     """
     def layer(A, parameters):
-        print('dense',  end=' => ', flush=True)
+        #print('dense',  end=' => ', flush=True)
         W = parameters["W"+str(weight_id)]
         b = parameters["b"+str(weight_id)]
         Z = np.dot(W,A)+b
@@ -232,7 +255,7 @@ def dense(weight_id = -1):
 
 def Quantized_dense_b(grad_id = -1, truncate = False):
     def layer(dZ, cache, grads):
-        print('dense_b',  end=' => ', flush=True)
+        #print('dense_b',  end=' => ', flush=True)
         """
         Implement the linear portion of backward propagation for a single layer (layer l)
 
@@ -280,7 +303,7 @@ def reduce_mean_softmax_cross_entropy_loss(Y_hat, Y, truncate = False):
     cost = np.squeeze(cost)      # To make sure your cost's shape is what we expect (e.g. this turns [[17]] into 17).
     return cost.astype(np.float32)
 
-def initialize_weights_random_normal(filter_dims, layer_dims, truncate = 0, seed = 1):
+def initialize_weights_xavier(filter_dims, layer_dims, truncate = 0, seed = 1):
     '''
     Arguments:
     filter_dims -- dimension of filter:[(f,f,n_C_prev, n_C),(f,f,n_C_prev, n_C)]
@@ -296,23 +319,23 @@ def initialize_weights_random_normal(filter_dims, layer_dims, truncate = 0, seed
     l = 0
     for l in range(L):
         n_C, n_C_prev, f, f = filter_dims[l]
-        parameters['W' + str(l+1)] = np.random.randn(n_C, n_C_prev, f, f).astype(np.float32) * np.float32(0.05)
+        parameters['W' + str(l+1)] = np.random.randn(n_C, n_C_prev, f, f).astype(np.float32) * np.sqrt(2/(f*f*n_C_prev)).astype(np.float32)
         parameters['b' + str(l+1)] = np.zeros((n_C,1)).astype(np.float32)
         if truncate:
             parameters["W" + str(l+1)] = truncate_signed(parameters["W" + str(l+1)], truncate)
         l+=1
     
     for l in range(1, L2):
-        
-        parameters['W' + str(l+L)] = np.random.randn(layer_dims[l],layer_dims[l-1]).astype(np.float32)*np.float32(0.05)
-        parameters['b' + str(l+L)] = np.zeros((layer_dims[l],1)).astype(np.float32)
+        in_shape, out_shape = layer_dims[l-1], layer_dims[l]
+        parameters['W' + str(l+L)] = np.random.randn(out_shape,in_shape)*np.sqrt(2/in_shape).astype(np.float32)
+        parameters['b' + str(l+L)] = np.zeros((out_shape,1)).astype(np.float32)
         if truncate:
-            parameters["W" + str(l+L)] = truncate_signed(parameters["W" + str(l+L)], truncate, weights_range = 0.08)
-            parameters["b" + str(l+L)] = truncate_signed(parameters["b" + str(l+L)], truncate, weights_range = 0.08)
+            parameters["W" + str(l+L)] = truncate_signed(parameters["W" + str(l+L)], truncate)
+            parameters["b" + str(l+L)] = truncate_signed(parameters["b" + str(l+L)], truncate)
         l+=1
     return parameters
 
-def update_weights(parameters, grads, learning_rate, optimizer = 'GD', truncate = False):
+def update_weights(parameters, grads, learning_rate, optimizer = 'GD', truncate = False, eps = 0.00000001):
     '''
     '''
     L = len(parameters) // 2
@@ -326,11 +349,14 @@ def update_weights(parameters, grads, learning_rate, optimizer = 'GD', truncate 
                 grads['VdW'+str(l+1)] = 0
                 grads['Vdb'+str(l+1)] = 0
             VdW, Vdb, dW, db = grads['VdW'+str(l+1)], grads['Vdb'+str(l+1)], grads['dW'+str(l+1)], grads['db'+str(l+1)]
-            beta = 0.5
-            VdW = beta * VdW + (1-beta) * dW
-            Vdb = beta * Vdb + (1-beta) * db
-            parameters["W" + str(l+1)] -= np.float32(learning_rate * VdW)
-            parameters["b" + str(l+1)] -= np.float32(learning_rate * Vdb)
+            beta = 0.9
+            # #This approach didn't work well
+            # VdW, Vdb = beta * VdW + (1-beta) * dW, beta * Vdb + (1-beta) * db
+            # parameters["W" + str(l+1)] -= np.float32(learning_rate * VdW)
+            # parameters["b" + str(l+1)] -= np.float32(learning_rate * Vdb)
+            VdW, Vdb = beta * VdW + learning_rate * dW, beta * Vdb + learning_rate * db
+            parameters["W" + str(l+1)] -= np.float32(VdW)
+            parameters["b" + str(l+1)] -= np.float32(Vdb)
     elif optimizer == 'RMSProp':
         for l in range(L):
             dW, db = grads['dW'+str(l+1)], grads['db'+str(l+1)]
@@ -339,12 +365,28 @@ def update_weights(parameters, grads, learning_rate, optimizer = 'GD', truncate 
                 grads['Sdb'+str(l+1)] = 0.5
             SdW, Sdb = grads['SdW'+str(l+1)], grads['Sdb'+str(l+1)]
             beta = 0.9
-            SdW = beta * SdW + (1-beta) * dW * dW
-            Sdb = beta * Sdb + (1-beta) * db * db
-            denW = np.sqrt(SdW) + 0.00000001
-            denb = np.sqrt(Sdb) + 0.00000001
+            SdW, Sdb = beta * SdW + (1-beta) * (dW**2), beta * Sdb + (1-beta) * (db**2)
+            denW, denb = np.sqrt(SdW) + eps, np.sqrt(Sdb) + eps
             parameters["W" + str(l+1)] -= np.float32(learning_rate * dW / denW)
             parameters["b" + str(l+1)] -= np.float32(learning_rate * db / denb)
+    elif optimizer == 'adam':
+        for l in range(L):
+            dW, db = grads['dW'+str(l+1)], grads['db'+str(l+1)]
+            if ('SdW'+str(l+1)) not in grads:
+                grads['VdW'+str(l+1)], grads['Vdb'+str(l+1)] = 0, 0
+                grads['SdW'+str(l+1)], grads['Sdb'+str(l+1)] = 0, 0
+            SdW, Sdb = grads['SdW'+str(l+1)], grads['Sdb'+str(l+1)]
+            beta1, beta2 = 0.9, 0.999
+            #velocity and RMS
+            VdW, Vdb = beta1 * VdW + (1. - beta1) * dW, beta1 * Vdb + (1. - beta1) * db
+            SdW, Sdb = beta2 * SdW + (1.-beta2) * (dW**2), beta2 * Sdb + (1.-beta2) * (db**2)
+            #Bias correction t is iters, not implemented
+            t = -1
+            VdW_hat, Vdb_hat = VdW / (1. - beta1**t), Vdb / (1. - beta1**t)
+            SdW_hat, Sdb_hat = SdW / (1. - beta2**t), Sdb / (1. - beta2**t)
+            denW, denb = np.sqrt(SdW_hat) + eps, np.sqrt(Sdb_hat) + eps
+            parameters["W" + str(l+1)] -= np.float32(learning_rate * VdW_hat / denW)
+            parameters["b" + str(l+1)] -= np.float32(learning_rate * Vdb_hat / denb)
     if truncate:
         for k,v in parameters.items():
             parameters[k] = truncate_signed(v,truncate)

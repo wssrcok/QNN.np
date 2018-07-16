@@ -2,10 +2,13 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
+from tqdm import tqdm
 from utils import load_dataset, randomize_batch
-from model_seq import MNIST_model, MNIST_model_b, cifar10_model, cifar10_model_b
+from model_seq import MNIST_model, MNIST_model_b, \
+                      svhn_model, svhn_model_b, \
+                      cifar10_model, cifar10_model_b
 from layers import reduce_mean_softmax_cross_entropy_loss, \
-                   initialize_weights_random_normal, update_weights
+                   initialize_weights_xavier, update_weights
 from quantize import truncate_grads # TEST
 
 def plot_costs(costs, learning_rate):
@@ -16,16 +19,21 @@ def plot_costs(costs, learning_rate):
     plt.show()
 
 def save_weights(weights):
-    print('saving weights')
-    np.save('./weights', weights)
+    print('save weights[y/n]?')
+    if (input() == 'y'):
+        print('saving...')
+        np.save('./weights', weights)
 
 def load_weights():
     print('loading weights')
     return np.load('./weights.npy').item()
 
 def predict(model, eval_set, weights):
+    print(1)
     eval_data, y = eval_set
-    y_hat, _ = model(eval_data[0:512], weights)
+    print(2)
+    y_hat, _ = model(eval_data[0:1024], weights)
+    print(3)
     p = np.zeros(y.shape)
     m = y_hat.shape[1]
     c = y_hat.shape[0]
@@ -49,11 +57,12 @@ def train(models, layer_dims, train_set,
           learning_rate = 0.02, 
           decay_rate = 0,
           batch_size = 32, 
-          num_epochs = 10):
+          num_epochs = 10,
+          print_cost = False):
     train_data, train_labels = train_set
     #numpy is really slow, so use 1k example instead of 50k originally
-    train_data = train_data[0:1024].astype(np.float32)
-    train_labels = train_labels[:,0:1024]
+    train_data = train_data[4096:4096*2].astype(np.float32)
+    train_labels = train_labels[:,4096:4096*2]
 
     model, model_b = models
     costs = []            # keep track of cost
@@ -66,14 +75,14 @@ def train(models, layer_dims, train_set,
         weights = load_weights()
     except IOError:
         print('loading failed, initialize new weights')
-        weights = initialize_weights_random_normal(conv_dim, dense_dim, seed = 1)
+        weights = initialize_weights_xavier(conv_dim, dense_dim, seed = 1)
 
     batchs = train_data.shape[0] // batch_size
     learning_rate_o = learning_rate
-    for i in range(num_epochs):
+    for i in tqdm(range(num_epochs)):
         # batch is randomized
         train_data, train_labels = randomize_batch(train_data, train_labels)
-        for j in range(batchs):
+        for j in tqdm(range(batchs)):
             begin = j*batch_size
             end = (j+1)*batch_size
             x = train_data[begin:end]
@@ -82,9 +91,12 @@ def train(models, layer_dims, train_set,
             # model goes entire forward pass
             y_hat, caches = model(x, weights)
             caches[-1] = y # y is cached for softmax_b
+#--------------------------------------------------------
             cost = reduce_mean_softmax_cross_entropy_loss(y_hat, y, truncate = truncate_f)
+#--------------------------------------------------------
             # model_b goes entire backward pass
             model_b(y_hat, caches, grads) # this will also update all gradients
+#--------------------------------------------------------
             truncate_grads(grads, truncate_b) # TESTCODE
             # update weights using minibatch gradient decent
             learning_rate = 1 / (1 + decay_rate * i) * learning_rate_o
@@ -93,15 +105,17 @@ def train(models, layer_dims, train_set,
                            truncate = truncate_f)
 
             # print cost
-            print ("\nCost after Epoch %i, batch %i: %f \n" %(i+1, j+1, cost))
-            if cost < 3:
-                costs.append(cost)
+            if print_cost:
+                print ("Cost after Epoch %i, batch %i: %f" %(i+1, j+1, cost))
+                if cost < 3:
+                    costs.append(cost)
         # if i % 2 == 0: # TESTCODE
         #     batch_size *= 2 # TESTCODE batch is starting with 1
         #     batchs = train_data.shape[0] // batch_size # TESTCODE batch is starting with 1
-        print('Epoch %i, Done!\n' %(i+1))
-
-    plot_costs(costs, learning_rate)
+        if print_cost:
+            print('Epoch %i, Done!\n' %(i+1))
+    if print_cost:
+        plot_costs(costs, learning_rate)
     return weights
 
 # TODO: add quantization
@@ -114,16 +128,17 @@ def main():
         print('usage4: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)> <quantize_grads(int)>')
         return None
 
-    train_data, train_labels, eval_data, eval_labels, classes = load_dataset(data = 'cifar10')
+    train_data, train_labels, eval_data, eval_labels, classes = load_dataset(data = 'svhn')
 
     train_set = (train_data, train_labels)
 
     # conv_dims = [(32,1,5,5),(64,32,5,5)] #these two are for MNIST
     # dense_dims = [3136, 1024, classes]
+    # conv_dims = [(32,3,5,5),(64,32,5,5)] #these two are for SVHN
+    # dense_dims = [4096, 1024, classes]
     conv_dims = [(32,3,3,3),(32,32,3,3),(64,32,3,3),(64,64,3,3)]
     dense_dims = [4096, 512, classes]
     layer_dims = (conv_dims, dense_dims)
-
     weights = {}
     batch_size = 32
     learning_rate = 0.02
@@ -140,16 +155,19 @@ def main():
         truncate_b = int(sys.argv[5])
         
     #models = (MNIST_model(truncate_f), MNIST_model_b(truncate_b))
+    #models = (svhn_model(truncate_f), svhn_model_b(truncate_b))
     models = (cifar10_model(truncate_f), cifar10_model_b(truncate_b))
     weights = train(models, layer_dims, train_set,
                     batch_size=batch_size,
                     learning_rate=learning_rate,
                     num_epochs=num_epochs,
                     truncate_f=truncate_f,
-                    truncate_b=truncate_b)
-
+                    truncate_b=truncate_b,
+                    print_cost=True)
     eval_set = (eval_data, eval_labels)
+    #predict(MNIST_model(), train_set, weights)
     #predict(MNIST_model(), eval_set, weights)
+    print('before predict')
     predict(cifar10_model(), eval_set, weights)
     save_weights(weights)
 
