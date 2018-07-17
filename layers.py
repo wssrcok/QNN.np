@@ -82,7 +82,7 @@ def Quantized_ReLu(truncate = False):
     cache -- a python dictionary containing "A" ; stored for computing the backward pass efficiently
     """
     def layer(x, dummy_parameters):
-        print('relu',  end=' => ', flush=True)
+        #print('relu',  end=' => ', flush=True)
         out = np.maximum(0,x)
         cache = x
         if truncate:
@@ -100,7 +100,7 @@ def ReLu_b():
     dZ -- Gradient of the cost with respect to Z
     """
     def layer(dA, cache, dummy_grads):
-        print('relu_b',  end=' => ', flush=True)
+        #print('relu_b',  end=' => ', flush=True)
         Z = cache
         dZ = np.array(dA, copy=True) # just converting dz to a correct object.
         # When z <= 0, you should set dz to 0 as well.
@@ -319,7 +319,7 @@ def initialize_weights_xavier(filter_dims, layer_dims, truncate = 0, seed = 1):
     l = 0
     for l in range(L):
         n_C, n_C_prev, f, f = filter_dims[l]
-        parameters['W' + str(l+1)] = np.random.randn(n_C, n_C_prev, f, f).astype(np.float32) * np.sqrt(2/(f*f*n_C_prev)).astype(np.float32)
+        parameters['W' + str(l+1)] = np.random.randn(n_C, n_C_prev, f, f) * np.sqrt(2/(f*f*n_C_prev)).astype(np.float32)
         parameters['b' + str(l+1)] = np.zeros((n_C,1)).astype(np.float32)
         if truncate:
             parameters["W" + str(l+1)] = truncate_signed(parameters["W" + str(l+1)], truncate)

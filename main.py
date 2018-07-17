@@ -61,8 +61,8 @@ def train(models, layer_dims, train_set,
           print_cost = False):
     train_data, train_labels = train_set
     #numpy is really slow, so use 1k example instead of 50k originally
-    train_data = train_data[4096:4096*2].astype(np.float32)
-    train_labels = train_labels[:,4096:4096*2]
+    train_data = train_data[0:1024].astype(np.float32)
+    train_labels = train_labels[:,0:1024]
 
     model, model_b = models
     costs = []            # keep track of cost
@@ -128,16 +128,16 @@ def main():
         print('usage4: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)> <quantize_grads(int)>')
         return None
 
-    train_data, train_labels, eval_data, eval_labels, classes = load_dataset(data = 'svhn')
+    train_data, train_labels, eval_data, eval_labels, classes = load_dataset(data = 'MNIST')
 
     train_set = (train_data, train_labels)
 
-    # conv_dims = [(32,1,5,5),(64,32,5,5)] #these two are for MNIST
-    # dense_dims = [3136, 1024, classes]
+    conv_dims = [(32,1,5,5),(64,32,5,5)] #these two are for MNIST
+    dense_dims = [3136, 1024, classes]
     # conv_dims = [(32,3,5,5),(64,32,5,5)] #these two are for SVHN
     # dense_dims = [4096, 1024, classes]
-    conv_dims = [(32,3,3,3),(32,32,3,3),(64,32,3,3),(64,64,3,3)]
-    dense_dims = [4096, 512, classes]
+    # conv_dims = [(32,3,3,3),(32,32,3,3),(64,32,3,3),(64,64,3,3)]
+    # dense_dims = [4096, 512, classes]
     layer_dims = (conv_dims, dense_dims)
     weights = {}
     batch_size = 32
@@ -154,9 +154,9 @@ def main():
     if args == 6:
         truncate_b = int(sys.argv[5])
         
-    #models = (MNIST_model(truncate_f), MNIST_model_b(truncate_b))
+    models = (MNIST_model(truncate_f), MNIST_model_b(truncate_b))
     #models = (svhn_model(truncate_f), svhn_model_b(truncate_b))
-    models = (cifar10_model(truncate_f), cifar10_model_b(truncate_b))
+    #models = (cifar10_model(truncate_f), cifar10_model_b(truncate_b))
     weights = train(models, layer_dims, train_set,
                     batch_size=batch_size,
                     learning_rate=learning_rate,
@@ -166,9 +166,9 @@ def main():
                     print_cost=True)
     eval_set = (eval_data, eval_labels)
     #predict(MNIST_model(), train_set, weights)
-    #predict(MNIST_model(), eval_set, weights)
+    predict(MNIST_model(), eval_set, weights)
     print('before predict')
-    predict(cifar10_model(), eval_set, weights)
+    #predict(cifar10_model(), eval_set, weights)
     save_weights(weights)
 
 if __name__ == '__main__':

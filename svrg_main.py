@@ -58,10 +58,9 @@ def train(models, layer_dims, train_set,
           print_cost = True):
     train_data, train_labels = train_set
     #numpy is really slow, so use 1k example instead of 50k originally
-    train_data = train_data[0:512].astype(np.float32)
-    train_labels = train_labels[:,0:512]
+    train_data = train_data[0:256].astype(np.float32)
+    train_labels = train_labels[:,0:256]
 
-    model, model_b = models
     costs = []            # keep track of cost
     grads = {}
     conv_dim, dense_dim = layer_dims
@@ -69,33 +68,25 @@ def train(models, layer_dims, train_set,
     # initialize weights
     weights = {}
     try:
-        weights = load_weights()
+        w_bar = load_weights()
     except IOError:
         print('loading failed, initialize new weights')
         w_bar = initialize_weights_xavier(conv_dim, dense_dim, seed = 1)
 
-    T = train_data.shape[0]
-    learning_rate_o = learning_rate
-    for k in range(num_epochs):
-        g_k, cost = get_grads(train_data, train_labels, models, w_bar)
-        w = w_bar
-        for t in range(T):
+    T = batch_size
+    for k in tqdm(range(num_epochs)):
+        g, cost = get_grads(train_data, train_labels, models, w_bar)
+        print ("Cost after Epoch %i: %f" %(k+1, cost))
+        w = w_bar.copy()
+        for t in tqdm(range(T)):
             idx = np.random.randint(train_data.shape[0])
-            dw, _ = get_grads(train_data[idx], train_labels[:,idx], models, w)
-            dw_bar, _ = get_grads(train_data[idx], train_labels[:,idx], models, w_bar)
-            
-            learning_rate = 1 / (1 + decay_rate * i) * learning_rate_o
-
-            update_weights(w, g_k, dw, dw_bar, np.float32(learning_rate))
-        w_bar = w
-        # print cost
-        if print_cost:
-            print ("Cost after Epoch %i: %f" %(k+1, cost))
-            if cost < 3:
-                costs.append(cost)
+            dw, loss = get_grads(train_data[idx:idx+1], train_labels[:,idx:idx+1], models, w)
+            dw_bar, loss_bar = get_grads(train_data[idx:idx+1], train_labels[:,idx:idx+1], models, w_bar)
+            #print ("loss after Epoch %i, batch %i: %f, %f" %(k+1, t+1, loss, loss_bar))
+            w = update_weights_SVRG(w, g, dw, dw_bar, np.float32(learning_rate))
+        w_bar = w.copy()
     return w_bar
 
-# TODO: add quantization
 def main():
     args = len(sys.argv)
     if args == 0 or args == 2 or args == 3:
