@@ -10,3 +10,5 @@ for k in range(1, epochs+1):
 		dw_prev = use w_prev to find gradient over data[idx]
 		dw≈ = use w≈ to find gradient over data[idx]
 		w = w_prev - learning_rate * (dw_prev - dw≈ + g_k)
+	w≈ = w
+return w≈

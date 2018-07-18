@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from tqdm import tqdm
+import copy
 from utils import load_dataset, randomize_batch
 from model_seq import MNIST_model, MNIST_model_b, \
                       svhn_model, svhn_model_b, \
@@ -62,29 +63,29 @@ def train(models, layer_dims, train_set,
     train_labels = train_labels[:,0:256]
 
     costs = []            # keep track of cost
-    grads = {}
     conv_dim, dense_dim = layer_dims
     
     # initialize weights
-    weights = {}
     try:
         w_bar = load_weights()
     except IOError:
         print('loading failed, initialize new weights')
         w_bar = initialize_weights_xavier(conv_dim, dense_dim, seed = 1)
-
     T = batch_size
     for k in tqdm(range(num_epochs)):
         g, cost = get_grads(train_data, train_labels, models, w_bar)
         print ("Cost after Epoch %i: %f" %(k+1, cost))
-        w = w_bar.copy()
+        w = copy.deepcopy(w_bar)
         for t in tqdm(range(T)):
             idx = np.random.randint(train_data.shape[0])
             dw, loss = get_grads(train_data[idx:idx+1], train_labels[:,idx:idx+1], models, w)
-            dw_bar, loss_bar = get_grads(train_data[idx:idx+1], train_labels[:,idx:idx+1], models, w_bar)
-            #print ("loss after Epoch %i, batch %i: %f, %f" %(k+1, t+1, loss, loss_bar))
+            dw_bar, _ = get_grads(train_data[idx:idx+1], train_labels[:,idx:idx+1], models, w_bar)
+            print ("loss after Epoch %i, batch %i: %f" %(k+1, t+1, loss))
             w = update_weights_SVRG(w, g, dw, dw_bar, np.float32(learning_rate))
-        w_bar = w.copy()
+            if loss < 3:
+                    costs.append(loss)
+        w_bar = copy.deepcopy(w)
+    plot_costs(costs, learning_rate)
     return w_bar
 
 def main():
@@ -96,17 +97,11 @@ def main():
         print('usage4: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)> <quantize_grads(int)>')
         return None
 
-    train_data, train_labels, eval_data, eval_labels, classes = load_dataset(data = 'MNIST')
+    data = 'svhn'
+    train_data, train_labels, eval_data, eval_labels, classes = load_dataset(data = data)
 
     train_set = (train_data, train_labels)
 
-    conv_dims = [(32,1,5,5),(64,32,5,5)] #these two are for MNIST
-    dense_dims = [3136, 1024, classes]
-    # conv_dims = [(32,3,5,5),(64,32,5,5)] #these two are for SVHN
-    # dense_dims = [4096, 1024, classes]
-    # conv_dims = [(32,3,3,3),(32,32,3,3),(64,32,3,3),(64,64,3,3)]
-    # dense_dims = [4096, 512, classes]
-    layer_dims = (conv_dims, dense_dims)
     weights = {}
     batch_size = 32
     learning_rate = 0.02
@@ -122,20 +117,34 @@ def main():
     if args == 6:
         truncate_b = int(sys.argv[5])
         
-    models = (MNIST_model(truncate_f), MNIST_model_b(truncate_b))
-    #models = (svhn_model(truncate_f), svhn_model_b(truncate_b))
-    #models = (cifar10_model(truncate_f), cifar10_model_b(truncate_b))
+    if data == 'MNIST':
+        conv_dims = [(32,1,5,5),(64,32,5,5)] #these two are for MNIST
+        dense_dims = [3136, 1024, classes]
+        models = (MNIST_model(truncate_f), MNIST_model_b(truncate_b))
+    elif data == 'svhn':
+        conv_dims = [(32,3,5,5),(64,32,5,5)] #these two are for SVHN
+        dense_dims = [4096, 1024, classes]
+        models = (svhn_model(truncate_f), svhn_model_b(truncate_b))
+    elif data == 'cifar10':
+        conv_dims = [(32,3,3,3),(32,32,3,3),(64,32,3,3),(64,64,3,3)]
+        dense_dims = [4096, 512, classes]
+        models = (cifar10_model(truncate_f), cifar10_model_b(truncate_b))
+
+    layer_dims = (conv_dims, dense_dims)
+
     weights = train(models, layer_dims, train_set,
                     batch_size=batch_size,
                     learning_rate=learning_rate,
                     num_epochs=num_epochs,
                     truncate_f=truncate_f,
                     truncate_b=truncate_b)
-    print('after return')
+
     eval_set = (eval_data, eval_labels)
-    #predict(MNIST_model(), train_set, weights)
-    predict(MNIST_model(), eval_set, weights)
-    #predict(cifar10_model(), eval_set, weights)
+    if data == 'MNIST' or data == 'svhn':
+        predict(MNIST_model(), eval_set, weights)
+    elif data == 'cifar10':
+        predict(cifar10_model(), eval_set, weights)
+
     save_weights(weights)
 
 if __name__ == '__main__':

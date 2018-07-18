@@ -16,8 +16,11 @@ def update_weights_SVRG(w, g, dw, dw_bar, learning_rate):
         dW_l, db_l = "dW" + str(l+1), "db" + str(l+1)
         varW = dw_bar[dW_l] - g[dW_l]
         varb = dw_bar[db_l] - g[db_l]
-        w[W_l] = w[W_l] - learning_rate * (dw[dW_l] - varW)
-        w[b_l] = w[b_l] - learning_rate * (dw[db_l] - varb)
-        if (l < 2):
-            print(' dw', dw[dW_l][:,0,0,0], '\n', 'var', varW[:,0,0,0])
+        # if l == 0:
+        #     print('w   ',w[W_l][:,0,0,0])
+        #     print('amount',(dw[dW_l] - varW)[:,0,0,0])
+        w[W_l] -= learning_rate * (dw[dW_l] - 0*varW)
+        w[b_l] -= learning_rate * (dw[db_l] - 0*varb)
+        # if l == 0:
+        #     print('w2  ',w[W_l][:,0,0,0])
     return w

@@ -101,7 +101,7 @@ def train(models, layer_dims, train_set,
             # update weights using minibatch gradient decent
             learning_rate = 1 / (1 + decay_rate * i) * learning_rate_o
             update_weights(weights, grads, np.float32(learning_rate), 
-                           optimizer = 'RMSProp', 
+                           optimizer = 'GD', 
                            truncate = truncate_f)
 
             # print cost
@@ -128,17 +128,11 @@ def main():
         print('usage4: $ python main.py <batch_size(int)> <learning_rate(float)> <num_epochs(int)> <quantize_bits(int)> <quantize_grads(int)>')
         return None
 
-    train_data, train_labels, eval_data, eval_labels, classes = load_dataset(data = 'MNIST')
+    data = 'svhn'
+    train_data, train_labels, eval_data, eval_labels, classes = load_dataset(data = data)
 
     train_set = (train_data, train_labels)
 
-    conv_dims = [(32,1,5,5),(64,32,5,5)] #these two are for MNIST
-    dense_dims = [3136, 1024, classes]
-    # conv_dims = [(32,3,5,5),(64,32,5,5)] #these two are for SVHN
-    # dense_dims = [4096, 1024, classes]
-    # conv_dims = [(32,3,3,3),(32,32,3,3),(64,32,3,3),(64,64,3,3)]
-    # dense_dims = [4096, 512, classes]
-    layer_dims = (conv_dims, dense_dims)
     weights = {}
     batch_size = 32
     learning_rate = 0.02
@@ -154,9 +148,21 @@ def main():
     if args == 6:
         truncate_b = int(sys.argv[5])
         
-    models = (MNIST_model(truncate_f), MNIST_model_b(truncate_b))
-    #models = (svhn_model(truncate_f), svhn_model_b(truncate_b))
-    #models = (cifar10_model(truncate_f), cifar10_model_b(truncate_b))
+    if data == 'MNIST':
+        conv_dims = [(32,1,5,5),(64,32,5,5)] #these two are for MNIST
+        dense_dims = [3136, 1024, classes]
+        models = (MNIST_model(truncate_f), MNIST_model_b(truncate_b))
+    elif data == 'svhn':
+        conv_dims = [(32,3,5,5),(64,32,5,5)] #these two are for SVHN
+        dense_dims = [4096, 1024, classes]
+        models = (svhn_model(truncate_f), svhn_model_b(truncate_b))
+    elif data == 'cifar10':
+        conv_dims = [(32,3,3,3),(32,32,3,3),(64,32,3,3),(64,64,3,3)]
+        dense_dims = [4096, 512, classes]
+        models = (cifar10_model(truncate_f), cifar10_model_b(truncate_b))
+
+    layer_dims = (conv_dims, dense_dims)
+    
     weights = train(models, layer_dims, train_set,
                     batch_size=batch_size,
                     learning_rate=learning_rate,
