@@ -18,11 +18,15 @@ def plot_costs(costs, learning_rate):
     plt.title("Learning rate =" + str(learning_rate))
     plt.show()
 
-def save_weights(weights):
-    print('save weights[y/n]?')
-    if (input() == 'y'):
+def save_weights(weights, backup = False):
+    if backup:
         print('saving...')
-        np.save('./weights', weights)
+        np.save('./weights_backup', weights)
+    else:
+        print('save weights[y/n]?')
+        if (input() == 'y'):
+            print('saving...')
+            np.save('./weights', weights)
 
 def load_weights():
     print('loading weights')
@@ -61,8 +65,8 @@ def train(models, layer_dims, train_set,
           print_cost = False):
     train_data, train_labels = train_set
     #numpy is really slow, so use 1k example instead of 50k originally
-    train_data = train_data[0:1024].astype(np.float32)
-    train_labels = train_labels[:,0:1024]
+    train_data = train_data[0:2048].astype(np.float32)
+    train_labels = train_labels[:,0:2048]
 
     model, model_b = models
     costs = []            # keep track of cost
@@ -107,18 +111,19 @@ def train(models, layer_dims, train_set,
             # print cost
             if print_cost:
                 print ("Cost after Epoch %i, batch %i: %f" %(i+1, j+1, cost))
-                if cost < 3:
+            if cost < 3 and j % 32 == 0:
                     costs.append(cost)
+        if i % 5 == 0 and i != 0: 
+            save_weights(weights, backup = True)
         # if i % 2 == 0: # TESTCODE
         #     batch_size *= 2 # TESTCODE batch is starting with 1
         #     batchs = train_data.shape[0] // batch_size # TESTCODE batch is starting with 1
         if print_cost:
             print('Epoch %i, Done!\n' %(i+1))
-    if print_cost:
-        plot_costs(costs, learning_rate)
+    #if print_cost:
+    plot_costs(costs, learning_rate)
     return weights
 
-# TODO: add quantization
 def main():
     args = len(sys.argv)
     if args == 0 or args == 2 or args == 3:
